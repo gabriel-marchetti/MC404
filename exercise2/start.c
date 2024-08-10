@@ -1,4 +1,11 @@
+/* 
+ * This code defines the function responsible for executing the main
+ * and returning the right ret_code if the main's function execution
+ * runs without any problem.
+ *
+ */
 extern int main();
+
 void exit(int code)
 {
   __asm__ __volatile__(
