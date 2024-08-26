@@ -1,5 +1,6 @@
+compilelocal:
+	gcc -DLOCALEXEC -o main.x main.c
 runlocal:
-	gcc -DLOCALEXEC -o main.x main.c && ./main.x
-	make clean
+	./main.x
 make clean:
 	rm -r -f *.o *.x *.as

@@ -6,6 +6,11 @@ typedef enum {false, true} bool;
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+void printBuffer(char *buf, int n){
+  for(int i = 0; i < n; ++i){
+    printf("%2c ", buf[i]);
+  }
+}
 #else
 int read(int __fd, const void *__buf, int __n){
     int ret_val;
@@ -84,11 +89,6 @@ int readDecimal(char buf[20], int n){
   return tmp;
 }
 
-void printBuffer(char buf[20], int n){
-  for(int i = 0; i < n; ++i){
-    printf("%2c ", buf[i]);
-  }
-}
 
 int readHexadecimal(char buf[20], int n){
   int tmp = 0;
@@ -103,8 +103,8 @@ int readHexadecimal(char buf[20], int n){
       tmp += (buf[lsd_pos] - '0') * base;
       base *= 16;
     }
-    if(buf[lsd_pos] >= 'A' && buf[lsd_pos] <= 'E'){
-      tmp += (10 + buf[lsd_pos] - 'A') * base;
+    if(buf[lsd_pos] >= 'a' && buf[lsd_pos] <= 'f'){
+      tmp += (10 + buf[lsd_pos] - 'a') * base;
       base *= 16;
     }
     lsd_pos--;
@@ -219,34 +219,74 @@ int store_hexadecimal(char *hex_buf, char *bin_buf, int bin_size){
   return hex_buf_index;
 }
 
-int store_swap_endianess(char *swap_end_buf, char *bin_buf, int bin_size){
-  char aux_bin_buf[32];
-  int aux_index = 0, size_aux_buf;
-  //for(int i = 0; i < bin_size - 1; i++)
-  //  printf("%2d ", i);
-  //printf("\n");
-  //printBuffer(bin_buf, bin_size);
-  //printf("bin_size: %d\n", bin_size);
+int shift_buffer(char *buf, int size_buf){
+  char aux_buf[size_buf];
+  for(int i = 0; i < size_buf; i++)
+    aux_buf[i] = buf[i];
 
-  size_aux_buf = 0;
-  for(int i = bin_size - 2; i >= 2; i--){
-    aux_bin_buf[aux_index++] = bin_buf[i];
-    size_aux_buf++;
-  } 
-  //printf("%d\n", size_aux_buf);
-  //printBuffer(aux_bin_buf, bin_size - 1);
-  
-  unsigned int uns_decimal = 0;
-  int group = 1;
-  for(int i = 0; i < size_aux_buf; i++){
-    if( i % 4 == 0 )
-      group++;
-    uns_decimal += (aux_bin_buf[i] - '0') << ( group * 4 - ((i % 4) + 1) );
+  for(int i = 0; i < size_buf; i++){
+    buf[i+1] = aux_buf[i];
   }
-  printf("%d\n", uns_decimal);
+  buf[0] = '0';
 
+  return size_buf + 1;
+}
 
-  return 0;
+int store_swap_endianess(char *swap_end_buf, char *hex_buf, int hex_size){
+  char aux_buf[8], swap_buf[8];
+  int aux_index = 0;
+  for(int i = 0; i < 8; i++)
+    aux_buf[i] = '0';
+
+  for(int i = 2; i <= hex_size - 2; i++){
+    aux_buf[aux_index++] = hex_buf[i]; 
+  }
+  //printf("aux_size: %d\n", aux_index);
+  //printBuffer(aux_buf, aux_index);
+  //printf("\n");
+  while(aux_index < 8)
+    aux_index = shift_buffer(aux_buf, aux_index); 
+  //printf("aux_index: %d\n", aux_index);
+  //printBuffer(aux_buf, aux_index);
+  //printf("\n");
+  swap_buf[0] = aux_buf[6];
+  swap_buf[1] = aux_buf[7];
+  swap_buf[2] = aux_buf[4];
+  swap_buf[3] = aux_buf[5];
+  swap_buf[4] = aux_buf[2];
+  swap_buf[5] = aux_buf[3];
+  swap_buf[6] = aux_buf[0];
+  swap_buf[7] = aux_buf[1];
+  //printBuffer(swap_buf, aux_index);
+  //printf("\n");
+  unsigned int decimal_representation = 0;
+  int base = 1;
+  for(int i = 7; i >= 0; i--){
+    if( swap_buf[i] >= '0' && swap_buf[i] <= '9')
+      decimal_representation += base * (swap_buf[i] - '0');
+    else
+      decimal_representation += base * (swap_buf[i] - 'a' + 10);
+    base *= 16;
+  }
+  
+  //printf("decimal_representation: %d\n", decimal_representation);
+
+  aux_index = 0;
+  char inverse[20];
+  int swap_index = 0;
+  
+  while(decimal_representation){
+    inverse[aux_index++] = (decimal_representation % 10) + '0';
+    decimal_representation /= 10;
+  }
+
+  for(int i = aux_index - 1; i >= 0; i-- ){
+    swap_end_buf[swap_index++] = inverse[i];
+  }
+
+  swap_end_buf[aux_index++] = '\n';
+
+  return aux_index;
 }
 
 int main(){
@@ -269,6 +309,7 @@ int main(){
       break;
   } 
 
+
   char two_complement_buf[32+3]; // +3 Due to "Ob" at the beggining and "\n" at the end
   char decimal_buf[20]; // 20 is enough
   char hexadecimal_buf[8+3];
@@ -283,7 +324,7 @@ int main(){
   int n_hexadecimal = store_hexadecimal(hexadecimal_buf, two_complement_buf, n_two_complement);
   write(STDOUT_FD, hexadecimal_buf, n_hexadecimal);
 
-  int n_swapped_endianess = store_swap_endianess(decimal_buf_swapped_endianess, two_complement_buf, n_two_complement);
+  int n_swapped_endianess = store_swap_endianess(decimal_buf_swapped_endianess, hexadecimal_buf, n_hexadecimal);
   write(STDOUT_FD, decimal_buf_swapped_endianess, n_swapped_endianess);
 
 
