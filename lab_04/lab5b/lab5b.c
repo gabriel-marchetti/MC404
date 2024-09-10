@@ -83,6 +83,7 @@ void _start(){
     exit(ret_code);
 }
 #endif
+
 // Receives an int value and then display its hexadecimal representation in STDOUT.
 // Parameters: 
 //    - val: value to convert to hexadecimal representaion and display.
@@ -452,8 +453,81 @@ void get_inst_data(char inst[], InstData *data){
     return;
 }
 
+#define getBit(w, i) ( (w >> i) & 1 )
+
 int unpack(InstData data){
-  
+  InstType type = data.type;
+  int unpacked_data = 0, index = 0, bit = 0, flag = -1;
+
+  if( type == R ){
+    flag = 1;
+    for(int i = 0; i <= 6; i++){
+      bit = getBit(data.opcode, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+    for(int i = 0; i <= 4; i++){
+      bit = getBit(data.rd, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+    for(int i = 0; i <= 2; i++){
+      bit = getBit(data.funct3, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+    for(int i = 0; i <= 4; i++){
+      bit = getBit(data.rs1, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+    for(int i = 0; i <= 4; i++){
+      bit = getBit(data.rs2, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+    for(int i = 0; i <= 5; i++){
+      bit = getBit(data.funct7, i);  
+      unpacked_data += (bit << index);
+      index++;
+    }
+  }
+  else if( type == I ){
+    flag = 1;
+
+  }
+  else if( type == S ){
+    flag = 1;
+
+  }
+  else if( type == B ){
+    flag = 1;
+
+  }
+  else if( type == U ){
+    flag = 1;
+
+  }
+  else if( type == B ){
+    flag = 1;
+
+  }
+
+  if(flag == -1){
+    char error_buffer[] = "No type found unpacking data.\n";
+    write(1, error_buffer, 31);
+  }
+}
+
+void printInstData(InstData data){
+  printf("Type: %c\n", data.type);
+  printf("OpCode: %d\n", data.opcode);
+  printf("rs1: %d\n", data.rs1);
+  printf("rs2: %d\n", data.rs2);
+  printf("rd: %d\n", data.rd);
+  printf("imm: %d\n", data.imm);
+  printf("func3: %d\n", data.funct3);
+  printf("func7: %d\n", data.funct7);
 }
 
 int main()
@@ -465,8 +539,12 @@ int main()
     */
   char buffer[40];
   InstData data;
+  int n = read(0, buffer, 40);
   get_inst_data(buffer, &data);
 
+  printInstData(data);
+
+  hex_code(unpack(data));
 
   return 0;
 }
