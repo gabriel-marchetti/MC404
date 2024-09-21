@@ -10,6 +10,7 @@ answer3:        .skip 0x4
 answer4:        .skip 0x4
 
 .section .text
+.globl _start
 .align 2
 _start:
   jal read
@@ -17,30 +18,27 @@ _start:
   li a0, 0
   add a0, a0, t6
   jal load # t0 will have the value of first number
+debug:
   addi a0, t0, 0 # a0 <- t0
   jal square_root # a0 will have the value of square_root
-  debug_1:
   SW a0, answer1, t5
   li a0, 5
   add a0, a0, t6
   jal load # t0 will have the value of second number
   addi a0, t0, 0 # a0 <- t0
   jal square_root # a0 will have the value of square_root
-  debug_2:
   SW a0, answer2, t5
   li a0, 10
   add a0, a0, t6
   jal load # t0 will have the value of third number
   addi a0, t0, 0 # a0 <- t0
   jal square_root # a0 will have the value of square_root
-  debug_3:
   SW a0, answer3, t5
   li a0, 15
   add a0, a0, t6
   jal load # t0 will have the value of fourth number
   addi a0, t0, 0 # a0 <- t0
   jal square_root # a0 will have the value of square_root
-  debug_4:
   SW a0, answer4, t5
   jal store_output_buffer
   jal write
@@ -50,7 +48,6 @@ _start:
 # all answers stored
 store_output_buffer:
   li s0, 10
-
   # t0: current value
   # t1: remainder
   # Answer 1
