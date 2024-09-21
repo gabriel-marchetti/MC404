@@ -16,6 +16,7 @@ typedef struct InstData {
 #ifdef LOCALEXEC
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #else
 int main();
 // read function.
@@ -461,55 +462,85 @@ int unpack(InstData data){
 
   if( type == R ){
     flag = 1;
+    printf("Type: R\n");
+
+    printf("Opcode: ");
     for(int i = 0; i <= 6; i++){
       bit = getBit(data.opcode, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
+
+    printf("rd: ");
     for(int i = 0; i <= 4; i++){
       bit = getBit(data.rd, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
+    
+    printf("funct3: ");
     for(int i = 0; i <= 2; i++){
       bit = getBit(data.funct3, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
+
+    printf("rs1: ");
     for(int i = 0; i <= 4; i++){
       bit = getBit(data.rs1, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
+
+    printf("rs2: ");
     for(int i = 0; i <= 4; i++){
       bit = getBit(data.rs2, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
+
+    printf("funct7: ");
     for(int i = 0; i <= 5; i++){
       bit = getBit(data.funct7, i);  
       unpacked_data += (bit << index);
       index++;
+      printf("%d", bit);
     }
+    printf("\n");
   }
   else if( type == I ){
     flag = 1;
+    printf("Type: I\n");
 
   }
   else if( type == S ){
     flag = 1;
+    printf("Type: S\n");
 
   }
   else if( type == B ){
     flag = 1;
+    printf("Type: B\n");
 
   }
   else if( type == U ){
     flag = 1;
+    printf("Type: U\n");
 
   }
-  else if( type == B ){
+  else if( type == J ){
     flag = 1;
+    printf("Type: J\n");
 
   }
 
@@ -519,8 +550,30 @@ int unpack(InstData data){
   }
 }
 
+void printType(InstType type){
+  if( type == R ){
+    printf("R");
+  }
+  else if( type == I ){
+    printf("I");
+  }
+  else if( type == S ){
+    printf("S");
+  }
+  else if( type == B ){
+    printf("B");
+  }
+  else if( type == U ){
+    printf("U");
+  }
+  else if( type == J ){
+    printf("J");
+  }
+}
+
 void printInstData(InstData data){
-  printf("Type: %c\n", data.type);
+  printf("Type: ");
+  printType(data.type); printf("\n");
   printf("OpCode: %d\n", data.opcode);
   printf("rs1: %d\n", data.rs1);
   printf("rs2: %d\n", data.rs2);
