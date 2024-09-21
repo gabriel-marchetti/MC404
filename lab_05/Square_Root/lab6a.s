@@ -52,96 +52,96 @@ store_output_buffer:
   # t1: remainder
   # Answer 1
   la t5, output_address
-  LW t0, answer1
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 3(t5)
+  LW t1, answer1
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 3(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 2(t5)
+  rem t0, t1, s0 # t0 <- t1 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 2(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 1(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 1(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 0(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 0(t5)
   div t1, t1, s0 # t1 <- t1 / 10
 
   # Puts ' ' 
-  li t1, ' '
-  sb t1, 4(t5)
+  li t0, ' '
+  sb t0, 4(t5)
 
   #Answer 2
-  LW t0, answer2
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 5(t5)
+  LW t1, answer2
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 8(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 6(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 7(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 7(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 6(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 8(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 5(t5)
   div t1, t1, s0 # t1 <- t1 / 10
 
   # Puts ' ' 
-  li t1, ' '
-  sb t1, 9(t5)
+  li t0, ' '
+  sb t0, 9(t5)
 
   #Answer 3
-  LW t0, answer3
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 10(t5)
+  LW t1, answer3
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 13(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 11(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 12(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 12(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 11(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 13(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 10(t5)
   div t1, t1, s0 # t1 <- t1 / 10
 
   # Puts ' ' 
-  li t1, ' '
-  sb t1, 14(t5)
+  li t0, ' '
+  sb t0, 14(t5)
 
   #Answer 4
-  LW t0, answer4
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 15(t5)
+  LW t1, answer4
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 18(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 16(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 17(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 17(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 16(t5)
   div t1, t1, s0 # t1 <- t1 / 10
-  rem t1, t0, s0 # t1 <- t0 % 10
-  addi t1, t1, '0' # Adjust to ASCII
-  sb t1, 18(t5)
+  rem t0, t1, s0 # t1 <- t0 % 10
+  addi t0, t0, '0' # Adjust to ASCII
+  sb t0, 15(t5)
   div t1, t1, s0 # t1 <- t1 / 10
 
   # Puts ' ' 
-  li t1, '\n'
-  sb t1, 19(t5)
+  li t0, '\n'
+  sb t0, 19(t5)
   ret
 read:
   li a0, 0              # file descriptor (STDIN_FD)
@@ -163,7 +163,7 @@ write:
 ##################
 load:
   li t0, 0              # accumulator
-  li t3, 3              # iterations 
+  li t3, 4              # iterations 
   li t2, 10
   1:
   mul t0, t0, t2
