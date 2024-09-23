@@ -1,5 +1,6 @@
 .section .data
 input_address: .skip 0x20
+#input_address: .ascii "+0700 -0100\n2000 0000 2240 2300\n"
 output_address: .skip 0xc
 
 .section .bss
@@ -13,18 +14,19 @@ Tr: .skip 0x4
 Da: .skip 0x4
 Db: .skip 0x4
 Dc: .skip 0x4
-x: .skip 0x4
+var_x: .skip 0x4
 y: .skip 0x4
-x1: .skip 0x4
-x2: .skip 0x4
+var_x1: .skip 0x4
+var_x2: .skip 0x4
 
 .section .text
-.align 2
 .globl _start
+.align 2
 
 _start:
     jal read # store input to buffer
     la a0, input_address
+    debug_start:
     jal store_from_buffer #s1 will store Yb
     la t6, Yb
     sw s1, 0(t6)
@@ -44,18 +46,22 @@ _start:
     la t6, Tr
     sw s1, 0(t6)
     
+    debug:
     la a0, Tr # will be needed to compute Da, Db, Dc
     # Compute Da
     la a1, Ta
     jal compute_distance # s0 will store Da
+    la a1, Da
     sw s0, 0(a1)
     # Compute Db
     la a1, Tb
     jal compute_distance # s0 will store Db
+    la a1, Db
     sw s0, 0(a1)
     # Compute Dc
     la a1, Tc
     jal compute_distance # s0 will store Dc
+    la a1, Dc
     sw s0, 0(a1)
 
     # Compute y
@@ -77,33 +83,33 @@ _start:
     div s0, s0, t1 # s0 <- (Da^2 + Yb^2 - Db^2) / (2 * Yb)
     la s5, y
     sw s0, 0(s5)
-    # Compute x1
+    # Compute var_x1
     LW t0, Da
     LW t1, y
-    li a0, 0 # will store s1
+    li a0, 0 # will store var_x1
     li s1, -1
     mul t0, t0, t0 # t0 <- da^2
     mul t1, t1, t1
     mul t1, t1, s1 # t1 <- - y^2
-    add a0, t0, t1
-    jal square_root
-    la s5, x1
+    add a0, t0, t1 # a0 <- da^2 - y^2
+    jal square_root # a1 <- sqrt(da^2 - y^2)
+    la s5, var_x1
     sw a1, 0(s5)
     # Compute x2
-    mul x1, x1, s1
-    la s5, x2
+    mul a1, a1, s1 # a1 <- -sqrt(da^2 - y^2)
+    la s5, var_x2
     sw a1, 0(s5)
 
     # Choose best X
-    LW a0, x1
+    LW a0, var_x1
     mv a1, a0
-    LW a0, x2 
+    LW a0, var_x2 
     mv a2, a0
     blt a1, a2, 1f    
     return_point_condition:
-    la s5, x
+    la s5, var_x
     sw a0, 0(s5)
-    LW a0, x
+    LW a0, var_x
     LW a1, y
     jal store_to_buffer
     jal write
@@ -111,7 +117,7 @@ _start:
     li a7, 93
     ecall
 1:
-    LW a0, x1
+    LW a0, var_x1
     j return_point_condition
 
 # Inputs--------------------
@@ -130,20 +136,21 @@ store_from_buffer:
     li s1, 0 #will store decimal value
     li t4, 10 #base-10 number
     li t1, ' ' #detects space char
+    lb t2, 0(a0) # reads first digit
     li t5, '\n'#detects endline char
     2:
-    beq t1, t2, 2f 
+    beq t2, t1, 2f 
     beq t2, t5, 2f
     mul s1, s1, t4 #shift base-10 number to left
     lb t2, 0(a0)
-    addi t2, t2, -'0'
+    addi t2, t2, -'0' # Adjust ASCII
     add s1, s1, t2
     j 2b
 1:
     li t0, -1
     j store_from_buffer_continue 
 2:
-    addi a0, a0, 1
+    addi a0, a0, 1 # will change position of a0 to start of next number
     mul s1, s1, t0
     ret
 # Inputs------------------
@@ -155,7 +162,7 @@ store_to_buffer:
     lb t1, 0(t0)
     blt a0, zero, 1f 
     continue_after_checking_signal_x:
-    LW s1, x
+    LW s1, var_x
     li t2, 10
     rem t1, s1, t2 # t1 will have the unit
     div s1, s1, t2 # divide x by 10
