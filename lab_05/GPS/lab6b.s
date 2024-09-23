@@ -26,7 +26,6 @@ var_x2: .skip 0x4
 _start:
     jal read # store input to buffer
     la a0, input_address
-    debug_start:
     jal store_from_buffer #s1 will store Yb
     la t6, Yb
     sw s1, 0(t6)
@@ -46,7 +45,6 @@ _start:
     la t6, Tr
     sw s1, 0(t6)
     
-    debug:
     la a0, Tr # will be needed to compute Da, Db, Dc
     # Compute Da
     la a1, Ta
@@ -101,16 +99,29 @@ _start:
     sw a1, 0(s5)
 
     # Choose best X
+    debug_best_x:
     LW a0, var_x1
+    jal compute_condition
     mv a1, a0
+    bgt a1, zero, continue_var_x
+    li t4, -1
+    mul a1, a1, t4 # take absolute value of condition 
+    continue_var_x:
     LW a0, var_x2 
+    jal compute_condition
     mv a2, a0
+    bgt a2, zero, continue_var_y
+    li t4, -1
+    mul a2, a2, t4
+    continue_var_y:
+    LW a0, var_x2
     blt a1, a2, 1f    
     return_point_condition:
     la s5, var_x
     sw a0, 0(s5)
     LW a0, var_x
     LW a1, y
+
     jal store_to_buffer
     jal write
     li a0, 0
@@ -128,27 +139,33 @@ _start:
 store_from_buffer:
     li t0, 1     #detects sign
     li t1, '+'   #detects sign
+    li t3, '-'
     lb t2, 0(a0) #reads first char
-    bne t1, t2, 1f
+    beq t2, t3, 1f
+    beq t2, t1, 3f
     store_from_buffer_continue:
-    addi a0, a0, 1 #next char
 
     li s1, 0 #will store decimal value
     li t4, 10 #base-10 number
     li t1, ' ' #detects space char
-    lb t2, 0(a0) # reads first digit
     li t5, '\n'#detects endline char
     2:
+    lb t2, 0(a0)
     beq t2, t1, 2f 
     beq t2, t5, 2f
     mul s1, s1, t4 #shift base-10 number to left
-    lb t2, 0(a0)
     addi t2, t2, -'0' # Adjust ASCII
     add s1, s1, t2
+    addi a0, a0, 1
     j 2b
 1:
     li t0, -1
+    addi a0, a0, 1
     j store_from_buffer_continue 
+3:
+    li t0, 1
+    addi a0, a0, 1
+    j store_from_buffer_continue
 2:
     addi a0, a0, 1 # will change position of a0 to start of next number
     mul s1, s1, t0
@@ -159,73 +176,77 @@ store_from_buffer:
 store_to_buffer:
     la t0, output_address
     li t1, '+'
-    lb t1, 0(t0)
+    li t4, 1
     blt a0, zero, 1f 
     continue_after_checking_signal_x:
+    sb t1, 0(t0)
     LW s1, var_x
+    mul s1, s1, t4 # get absolute value of var_x
     li t2, 10
     rem t1, s1, t2 # t1 will have the unit
     div s1, s1, t2 # divide x by 10
     addi t1, t1, '0' # Adjust to ASCII
-    lb t1, 4(t0)
+    sb t1, 4(t0)
 
     rem t1, s1, t2 # t1 will have the dezena
     div s1, s1, t2 # divide x by 10
     addi t1, t1, '0'
-    lb t1, 3(t0)
+    sb t1, 3(t0)
 
     rem t1, s1, t2 # t1 will have the centena
     div s1, s1, t2 # divide x by 10
     addi t1, t1, '0'
-    lb t1, 2(t0)
+    sb t1, 2(t0)
 
 
     rem t1, s1, t2 # t1 will have the milhar
     div s1, s1, t2 # divide x by 10
     addi t1, t1, '0'
-    lb t1, 1(t0)
+    sb t1, 1(t0)
 
     li t1, ' '
-    lb t1, 5(t0)
+    sb t1, 5(t0)
 
     # store y
     li t1, '+'
-    lb t1, 6(t0)
+    li t4, 1
     blt a1, zero, 2f 
     continue_after_checking_signal_y:
+    sb t1, 6(t0)
     LW s1, y
+    mul s1, s1, t4 # get absolute value of y
     li t2, 10
     rem t1, s1, t2 # t1 will have the unit
     div s1, s1, t2 # divide y by 10
     addi t1, t1, '0' # Adjust to ASCII
-    lb t1, 10(t0)
+    sb t1, 10(t0)
 
     rem t1, s1, t2 # t1 will have the dezena
     div s1, s1, t2 # divide y by 10
     addi t1, t1, '0'
-    lb t1, 9(t0)
+    sb t1, 9(t0)
 
     rem t1, s1, t2 # t1 will have the centena
     div s1, s1, t2 # divide y by 10
     addi t1, t1, '0'
-    lb t1, 8(t0)
+    sb t1, 8(t0)
 
 
     rem t1, s1, t2 # t1 will have the milhar
     div s1, s1, t2 # divide y by 10
     addi t1, t1, '0'
-    lb t1, 7(t0)
+    sb t1, 7(t0)
 
     li t1, '\n'
-    lb t1, 11(t0)
+    sb t1, 11(t0)
     ret
 1:
     li t1, '-'
-    lb t1, 0(t0)
+    li t4, -1
     j continue_after_checking_signal_x
 2:
     li t1, '-'
-    lb t1, 6(t0)
+    li t4, -1
     j continue_after_checking_signal_y
 
 # Inputs------------------
@@ -261,7 +282,7 @@ write:
 # Outputs------------
 # a1: final value
 square_root:
-    li t0, 25 # number of iterations
+    li t0, 21 # number of iterations
     li t1, 2
     li a1, 0
     add a1, a1, a0

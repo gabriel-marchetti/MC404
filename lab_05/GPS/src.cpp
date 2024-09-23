@@ -26,6 +26,10 @@ int main(){
   da = ((Tr-Ta) * 3) / 10;
   db = ((Tr-Tb) * 3) / 10;
   dc = ((Tr-Tc) * 3) / 10;
+
+  cout << "da: " << da << '\n';
+  cout << "db: " << db << '\n';
+  cout << "dc: " << dc << '\n';
   int x, y;
   y = (da * da + Yb * Yb - db * db) / (2 * Yb); 
   int x1, x2; 
@@ -35,6 +39,7 @@ int main(){
   int condition1, condition2;
   condition1 = (x1 - Xc)*(x1 - Xc) + y * y - dc * dc;
   condition2 = (x2 - Xc)*(x2 - Xc) + y * y - dc * dc; 
+  condition1 = abs(condition1); condition2 = abs(condition2);
   x = (condition1 < condition2) ? x1 : x2;
 
   printf("%4d %4d\n", x, y);
