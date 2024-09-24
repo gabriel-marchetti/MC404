@@ -33,8 +33,14 @@ _start:
     la t0, flag_error
     sb a0, 0(t0)
 
-    debug:
+    la a0, bitmask_encoded
+    la a1, bitmask_decoded
+    la a2, flag_error
+    la a3, output_address
+    jal store_to_buffer
+    jal write
 
+    end_point:
     jal exit
 ########################################
 # inputs:
@@ -65,11 +71,79 @@ read_from_buffer:
 store_to_buffer:
     lw t0, 0(a0)            #t0 will load encoded mask
     li t2, 2                #base of binary number.
-    1:
-       beqz t0, 1f
-       rem t1, t0, t2 
-    1:
 
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 6(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 5(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 4(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 3(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 2(a3)           
+    
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 1(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 0(a3)           
+
+    li t1, '\n'
+    sb t1, 7(a3)            #add new line character
+
+    lw t0, 0(a1)
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 11(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 10(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 9(a3)           
+
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 8(a3)           
+
+    li t1, '\n'
+    sb t1, 12(a3)
+
+    lw t0, 0(a2)
+    rem t1, t0, t2          #get LSB
+    div t0, t0, t2
+    addi t1, t1, '0'        #adjust to ASCII
+    sb t1, 13(a3)           
+
+    li t1, '\n'
+    sb t1, 14(a3)
+    ret
 ########################################
 # inputs:
 #   a0: mask that will be used to encode the number
@@ -96,7 +170,7 @@ encode_hamming_code:
     li t2, 0x4              #will be used to extract d2.
     and t2, t2, t1          #will extract d2.
     snez t3, t2
-    mv s1, t3               #save the bit t3
+    mv s4, t3               #save the bit d2
     add t0, t0, t3          #count number of ones
     slli t3, t3, 2          #will sum to encoded mask.
     add a2, a2, t3          #add d2 to encoded mask.
@@ -109,13 +183,13 @@ encode_hamming_code:
 
     #Since we didn't change t0, we can subtract bit d2
     li s2, -1
-    mul s2, s1, s2          #change sign of s1
+    mul s2, s4, s2          #change sign of s4
     add t0, t0, s2          #subtract one if d2 is one.
 
     li t2, 0x2              #will be used to extract d3.
     and t2, t2, t1          #extract d3.
     snez t3, t2
-    mv s1, t3               #save the value from t3
+    mv s1, t3               #save the value from d3
     add t0, t0, t3
     slli t3, t3, 1          #will sum to encoded mask
     add a2, a2, t3          #add d3 to encoded mask
@@ -126,12 +200,14 @@ encode_hamming_code:
     slli t3, t3, 5          #mask
     add a2, a2, t3          #add to mask.
 
-    #Since s1 holds d2 and s5 holds d1
+    #Since s4 holds d2 and s5 holds d1
+    debug:
     li s2, -1
     mul s2, s2, s5          #change the sign of s5
     add t0, t0, s2          #subtract parity of d1
-    add t0, t0, s1          #add parity of d2
+    add t0, t0, s4          #add parity of d2
 
+    li t4, 2
     rem t3, t0, t4
     slli t3, t3, 3          #mask
     add a2, a2, t3          #add to mask. 
