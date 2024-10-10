@@ -5,10 +5,6 @@ newline: .ascii "\n"
 itoa_stack: .space 256
 test_buffer: .space 256
 
-###############################################################################
-# OBS: Parece que as rotinas gets, atoi e puts estão funcionando. Falta que itoa
-#      funcione. Dentro do simulador está caindo dentro de um loop infinito.
-###############################################################################
 .section .text
 .align 2
 .global _start
@@ -17,9 +13,10 @@ _start:
     jal gets
     la a0, test_buffer 
     jal atoi
-    # la a1, test_buffer
-    # li a2, 10
-    # jal itoa
+    debug:
+    la a1, test_buffer
+    li a2, 10
+    jal itoa
     la a0, test_buffer
     jal puts
 
@@ -109,7 +106,8 @@ atoi:
     ret
 ###############################################################################
 # Description:  Gets a number stored at register a0 and store it ASCII represen-
-#               tation at buffer a1 with base at a2. String must be null term.
+#               tation at buffer a1 with base at a2. String stored will be null
+#               terminated.
 # Inputs:
 #               a0: value.
 #               a1: buffer to store the ASCII representation.
@@ -123,26 +121,29 @@ itoa:
     sw a1, 0(sp)                # store buffer address (used for return).
     la t0, itoa_stack               
     li t5, 0                    # stack size
-    li t1, 1
     bgez a0, 1f
         li t6, -1               # load negative sign
         mul a0, a0, t6          # converts to positive integer.
     1:
+    beqz a0, 1f
     rem t2, a0, a2
     li t3, 9
     ble t2, t3, itoa_if
+    j itoa_else
     itoa_if:
         # deals with ASCII between '0' and '9'.
         addi t2, t2, '0'        # adjust to ASCII. 
-        addi t0, t0, 1          # increase size of stack
+        addi t0, t0, 1          # go-to next free space at the stack. 
         sb t2, 0(t0)            # store byte.
+        addi t5, t5, 1          # increase size of stack.
         j itoa_cont 
     itoa_else:
         # deals with ASCII between 'a' and 'f' for hexadecimal.
         addi t2, t2, -10        # adjust 'a' to zero and other character
         addi t2, t2, 'a'        # adjust to ASCII value.
-        addi t0, t0, 1          # increase size of stack
+        addi t0, t0, 1          # go-to next free space at the stack.
         sb t2, 0(t0)            # store byte.
+        addi t5, t5, 1          # increase size of stack 
         j itoa_cont
     itoa_cont:
     divu a0, a0, a2
@@ -150,7 +151,7 @@ itoa:
     1:
     # Stack has all elements. Dealing with negative case.
     lw a1, 0(sp)
-    bgez t1, 1f     # Deals with negative case.
+    bgez t6, 1f     # Deals with negative case.
         li t2, '-'
         sb t2, 0(a1)
         addi a1, a1, 1
