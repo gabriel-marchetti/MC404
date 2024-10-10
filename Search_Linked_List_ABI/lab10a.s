@@ -7,20 +7,48 @@ test_buffer: .space 256
 
 .section .text
 .align 2
-.global _start
-_start:
-    la a0, test_buffer
-    jal gets
-    la a0, test_buffer 
-    jal atoi
-    debug:
-    la a1, test_buffer
-    li a2, 10
-    jal itoa
-    la a0, test_buffer
-    jal puts
+# .global _start
+# _start:
+#     la a0, test_buffer
+#     jal gets
+#     la a0, test_buffer 
+#     jal atoi
+#     debug:
+#     la a1, test_buffer
+#     li a2, 10
+#     jal itoa
+#     la a0, test_buffer
+#     jal puts
 
-    jal exit
+#     jal exit
+###############################################################################
+# Description:  Verify if sum of Node.val1 + Node.val2 = a1, it return the index
+#               of node if condition is satisfied at this node. Otherwise return
+#               -1.
+# Inputs:
+#               a0: Head_Node address.
+#               a1: val.
+# Outputs:
+#               a0: Index of Node. (Can be negative if not found).
+###############################################################################
+.global linked_list_search
+linked_list_search:
+    li t0, 0                # index of node
+    1:
+    beqz a0, 1f             # break loop
+    lw t1, 0(a0)
+    lw t2, 4(a0)
+    add t1, t1, t2          # t1 <- val1 + val2
+    bne t1, a1, 2f
+        mv a0, t0
+        ret
+    2:
+    addi t0, t0, 1          # adds one to index.
+    lw a0, 8(a0)            # get address of new node.
+    j 1b
+    1:
+    li a0, -1               # didn't find node with sum.
+    ret
 ###############################################################################
 # Description:  Writes string pointed by a0 to stdout.
 # Inputs:
@@ -31,9 +59,11 @@ _start:
 .global puts
 puts:
     li t0, 0                    # offset for buffer.
+    li t6, '\n'                 
     1:
     add t1, a0, t0              # adds to t1 address buffer plus offset.
     lb  t2, 0(t1)               # read from string. 
+    beq t2, t6, 1f
     beqz t2, 1f
         addi t0, t0, 1          # go-to next char at the string. (not null).
         j 1b
@@ -58,11 +88,16 @@ puts:
 ###############################################################################
 .global gets
 gets:
+    addi sp, sp, -4
+    sw a0, 0(sp)
     mv a1, a0                   # buffer address.
     li a0, 0                    # stdin file-descriptor
     li a2, 256                  # size of the buffer.
     li a7, 63                   # syscall read.
     ecall
+
+    lw a0, 0(sp)
+    addi sp, sp, 4
     ret
 ###############################################################################
 # Description:  Get input address with some decimal representation and converts
@@ -140,7 +175,7 @@ itoa:
     itoa_else:
         # deals with ASCII between 'a' and 'f' for hexadecimal.
         addi t2, t2, -10        # adjust 'a' to zero and other character
-        addi t2, t2, 'a'        # adjust to ASCII value.
+        addi t2, t2, 'A'        # adjust to ASCII value.
         addi t0, t0, 1          # go-to next free space at the stack.
         sb t2, 0(t0)            # store byte.
         addi t5, t5, 1          # increase size of stack 
@@ -180,6 +215,5 @@ itoa:
 ###############################################################################
 .global exit
 exit:
-    li a0, 0
     li a7, 93
     ecall
