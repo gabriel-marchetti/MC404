@@ -3,7 +3,7 @@ newline: .ascii "\n"
 
 .section .bss
 itoa_stack: .space 256
-test_buffer: .space 256
+test_buffer: .space 100
 
 .section .text
 .align 2
@@ -13,7 +13,6 @@ test_buffer: .space 256
 #     jal gets
 #     la a0, test_buffer 
 #     jal atoi
-#     debug:
 #     la a1, test_buffer
 #     li a2, 10
 #     jal itoa
@@ -59,32 +58,40 @@ linked_list_search:
 ###############################################################################
 .global puts
 puts:
-    li t0, 0                    # offset for buffer.
-    li t6, '\n'                 
+    addi sp, sp, -4                 # allocate space necessary for ra
+    sw ra, 0(sp)                    # store ra
+
+    mv s0, a0                       # address of beggining of buffer (index).
+    li s1, 0                        # size of buffer in bytes
+    mv s6, a0                       # save address
+
+    li t3, 0                        # null char
     1:
-    add t1, a0, t0              # adds to t1 address buffer plus offset.
-    lb  t2, 0(t1)               # read from string. 
-    beq t2, t6, 1f
-    beqz t2, 1f
-        addi t0, t0, 1          # go-to next char at the string. (not null).
+    lb t2, 0(s0)
+    beq t2, t3, 1f
+        addi s0, s0, 1              # go-to next char
+        addi s1, s1, 1              # increase buffer size
         j 1b
     1:
-    # Append new line char to buffer. Since buffer is overshoot of entry
-    # should be no problem.
-    add t1, a0, t0
-    sb t6, 0(t1)
-    addi t0, t0, 1
+    li t2, '\n'
+    sb t2, 0(s0)                    # load new-line char at the end of buffer
+    addi s1, s1, 1                  # increase size
 
-    mv a1, a0                   
-    li a0, 1                    # stdout file-descriptor. 
-    mv a2, t0                   # size of buffer.
-    li a7, 64                   # syscall write.
+    mv a1, s6                       # restore address
+    mv a2, s1
+    li a0, 1
+    jal write
+
+    lw ra, 0(sp)
+    addi sp, sp, 4
+    ret
+.global write
+###############################################################################
+# a1: address of buffer.
+# a2: size in bytes of buffer.
+write:
+    li a7, 64
     ecall
-    # li a0, 1                    # stdout file-descriptor.
-    # la a1, newline              # address of newline string. 
-    # li a2, 1
-    # li a7, 64                   # syscall write.
-    # ecall
     ret
 ###############################################################################
 # Description:  get input from stdin.
@@ -95,52 +102,55 @@ puts:
 ###############################################################################
 .global gets
 gets:
-    addi sp, sp, -8
-    sw a0, 0(sp)
-    # Compute size until '\n' find.
-    li t0, 0
-    li t6, '\n'
-    1:
-    add t1, a0, t0              # get address current index of buffer.
-    lb  t2, 0(t1)               # get content from buffer.
-    beq t2, t6, 1f
-        addi t0, t0, 1          # increase size.
-        j 1b                    # repeat 
-    1:
-    sw t0, 4(sp)
+    addi sp, sp, -4     # Salvando conteúdo de RA
+    sw ra, 0(sp)
 
-    li a0, 0                    # stdin file-descriptor.
-    lb a1, 0(sp)                # load buffer address.
-    li a2, t0                   # size of the buffer.
-    li a7, 63                   # syscall read.
+    mv t0, a0               # t0 <- a0 (endereço do buffer a ser preenchido)
+    mv s11, a0      
+    li t1, '\n'             # t1 <- '/n' para comparação
+    li a2, 1                # Número de bytes a serem lidos
+
+    0:
+        li a0, 0
+        mv a1, t0
+        li a2, 1
+        jal read            # Lê o stdin
+        lbu t2, 0(t0)       # Carrega o caracter que acabou de ser lido no t2
+        addi t0, t0, 1      # t0++
+        bne t2, t1, 0b      # Volta à label '0' anterior se t2 != '/n'
+    li t1, 0  
+    sb t1, -1(t0)           # Coloca NULL no final da string
+
+    mv a0, s11
+
+    lw ra, (sp)             # Recuperando conteúdo de RA
+    addi sp, sp, 4
+    ret
+###############################################################################
+# Description:  read some stream from specific file-descriptor defined in a0
+# Inputs:
+#               a0: file descriptor (stdin)
+#               a1: address from stream
+#               a2: num of bytes
+#               a7: syscall read (63)
+# Outputs:
+#               a0: number of bytes read.
+###############################################################################
+.global read
+read:
+    li a7, 63
     ecall
-    #append null char at the end of string 
-    lw t0, 4(sp)                # get size of str.
-    lw a0, 0(sp)                # get address of buffer
-
-    add t1, a0, t0              # get last char
-    li t2, 0
-    sb t2, 0(t1)                # append null char at the end of string.
-
-    addi sp, sp, 8
     ret
 ###############################################################################
 # Description:  Get input address with some decimal representation and converts
 #               it to a 32-bit signed number.
 # Inputs:
-#               a0: stream address.
+#               a0: input stream address.
 # Outputs:
 #               a0: 32-bit signed number.
 ###############################################################################
 .global atoi
 atoi:
-    li t1, ' '
-    1:
-    lb t0, 0(a0)
-    bne t0, t1, 1f
-        addi a0, a0, 1
-        j 1b
-    1:
     # a0 will hold first non-whitespace character.
     lb t0, 0(a0)
     li t1, '-'
@@ -151,7 +161,7 @@ atoi:
     1:
     li t1, 0                # will hold the decimal value.
     li t3, 10               # base-10 number.
-    li t5, '\n'             # checks for newline char.
+    li t5, 0                # checks for null char.
     2:
     lb t0, 0(a0)
     beq t0, t5, 2f          # checks for newline character.
@@ -181,16 +191,7 @@ itoa:
     sw a1, 0(sp)                # store buffer address (used for return).
 
     # deals with zero-th case, i.e., a0 = 0
-    bnez a0, 1f
-        li t2, '0'
-        lb t2, 0(a1)
-        li t2, 0
-        lb t2, 1(a1)
-
-        lw a0, 0(sp)
-        addi sp, sp, 4
-        ret
-    1:
+    li s5, 0
 
     la t0, itoa_stack               
     li t5, 0                    # stack size
@@ -198,29 +199,32 @@ itoa:
         li t6, -1               # load negative sign
         mul a0, a0, t6          # converts to positive integer.
     1:
+    beqz s5, 2f
     beqz a0, 1f
-    rem t2, a0, a2
-    li t3, 9
-    ble t2, t3, itoa_if
-    j itoa_else
-    itoa_if:
-        # deals with ASCII between '0' and '9'.
-        addi t2, t2, '0'        # adjust to ASCII. 
-        addi t0, t0, 1          # go-to next free space at the stack. 
-        sb t2, 0(t0)            # store byte.
-        addi t5, t5, 1          # increase size of stack.
-        j itoa_cont 
-    itoa_else:
-        # deals with ASCII between 'a' and 'f' for hexadecimal.
-        addi t2, t2, -10        # adjust 'a' to zero and other character
-        addi t2, t2, 'A'        # adjust to ASCII value.
-        addi t0, t0, 1          # go-to next free space at the stack.
-        sb t2, 0(t0)            # store byte.
-        addi t5, t5, 1          # increase size of stack 
-        j itoa_cont
-    itoa_cont:
-    divu a0, a0, a2
-    j 1b 
+    2:
+        addi s5, s5, 1
+        rem t2, a0, a2
+        li t3, 9
+        ble t2, t3, itoa_if
+        j itoa_else
+        itoa_if:
+            # deals with ASCII between '0' and '9'.
+            addi t2, t2, '0'        # adjust to ASCII. 
+            addi t0, t0, 1          # go-to next free space at the stack. 
+            sb t2, 0(t0)            # store byte.
+            addi t5, t5, 1          # increase size of stack.
+            j itoa_cont 
+        itoa_else:
+            # deals with ASCII between 'a' and 'f' for hexadecimal.
+            addi t2, t2, -10        # adjust 'a' to zero and other character
+            addi t2, t2, 'A'        # adjust to ASCII value.
+            addi t0, t0, 1          # go-to next free space at the stack.
+            sb t2, 0(t0)            # store byte.
+            addi t5, t5, 1          # increase size of stack 
+            j itoa_cont
+        itoa_cont:
+        divu a0, a0, a2
+        j 1b 
     1:
     # Stack has all elements. Dealing with negative case.
     lw a1, 0(sp)
@@ -237,6 +241,9 @@ itoa:
         addi t5, t5, -1
         j 1b
     1:
+    li t0, 0
+    sb t0, 0(a1)
+
     li t1, 0                # null terminated string.
     sb t1, 0(a1)            # store null-terminated string.
     addi a1, a1, 1          # adjust index.
