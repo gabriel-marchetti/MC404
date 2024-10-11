@@ -50,7 +50,8 @@ linked_list_search:
     li a0, -1               # didn't find node with sum.
     ret
 ###############################################################################
-# Description:  Writes string pointed by a0 to stdout.
+# Description:  Writes string (terminated with null or new line)
+#               pointed by a0 to stdout.
 # Inputs:
 #               a0: Pointer to String.
 # Outputs:
@@ -68,16 +69,22 @@ puts:
         addi t0, t0, 1          # go-to next char at the string. (not null).
         j 1b
     1:
+    # Append new line char to buffer. Since buffer is overshoot of entry
+    # should be no problem.
+    add t1, a0, t0
+    sb t6, 0(t1)
+    addi t0, t0, 1
+
     mv a1, a0                   
     li a0, 1                    # stdout file-descriptor. 
     mv a2, t0                   # size of buffer.
     li a7, 64                   # syscall write.
     ecall
-    li a0, 1                    # stdout file-descriptor.
-    la a1, newline              # address of newline string. 
-    li a2, 1
-    li a7, 64                   # syscall write.
-    ecall
+    # li a0, 1                    # stdout file-descriptor.
+    # la a1, newline              # address of newline string. 
+    # li a2, 1
+    # li a7, 64                   # syscall write.
+    # ecall
     ret
 ###############################################################################
 # Description:  get input from stdin.
@@ -88,16 +95,34 @@ puts:
 ###############################################################################
 .global gets
 gets:
-    addi sp, sp, -4
+    addi sp, sp, -8
     sw a0, 0(sp)
-    mv a1, a0                   # buffer address.
-    li a0, 0                    # stdin file-descriptor
-    li a2, 256                  # size of the buffer.
+    # Compute size until '\n' find.
+    li t0, 0
+    li t6, '\n'
+    1:
+    add t1, a0, t0              # get address current index of buffer.
+    lb  t2, 0(t1)               # get content from buffer.
+    beq t2, t6, 1f
+        addi t0, t0, 1          # increase size.
+        j 1b                    # repeat 
+    1:
+    sw t0, 4(sp)
+
+    li a0, 0                    # stdin file-descriptor.
+    lb a1, 0(sp)                # load buffer address.
+    li a2, t0                   # size of the buffer.
     li a7, 63                   # syscall read.
     ecall
+    #append null char at the end of string 
+    lw t0, 4(sp)                # get size of str.
+    lw a0, 0(sp)                # get address of buffer
 
-    lw a0, 0(sp)
-    addi sp, sp, 4
+    add t1, a0, t0              # get last char
+    li t2, 0
+    sb t2, 0(t1)                # append null char at the end of string.
+
+    addi sp, sp, 8
     ret
 ###############################################################################
 # Description:  Get input address with some decimal representation and converts
@@ -154,6 +179,19 @@ atoi:
 itoa:
     addi sp, sp, -4             # alocate space to program stack.
     sw a1, 0(sp)                # store buffer address (used for return).
+
+    # deals with zero-th case, i.e., a0 = 0
+    bnez a0, 1f
+        li t2, '0'
+        lb t2, 0(a1)
+        li t2, 0
+        lb t2, 1(a1)
+
+        lw a0, 0(sp)
+        addi sp, sp, 4
+        ret
+    1:
+
     la t0, itoa_stack               
     li t5, 0                    # stack size
     bgez a0, 1f
