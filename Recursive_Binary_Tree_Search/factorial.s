@@ -1,64 +1,91 @@
 .section .bss
 itoa_stack: .space 256
-flag: .space 1
+buffer: .space 256
 
 .section .text
 .align 2
+.global _start
+_start:
+    la a0, buffer
+    jal gets
+    jal atoi
+    jal fibonacci
+
+    la a1, buffer
+    li a2, 10
+    jal itoa
+    la a0, buffer
+    jal puts
+
+    jal exit
 ###############################################################################
-# Description:  As the name suggests it search for a value in a binary tree.
-#               If it can find the value at a1, then returns the depth of value
-#               starting with root node at depth 1, if it cannot find the value
-#               then it should return 0.
+# Description:  Computes the factorial of a number.
 # Inputs:
-#               a0: Node Root of the tree.
-#               a1: Val
+#               a0: argument of factorial (a0)!.
 # Outputs:
-#               a0: Depth of the node.
+#               a0: the factorial itself.
 ###############################################################################
-.global recursive_tree_search
-recursive_tree_search:
-    addi sp, sp, -16                # add space to stack.
-    sw ra, 0(sp)                    # store ra.
-    sw a0, 4(sp)                    # store address of root node.
-    la t0, flag
-    lb t1, 0(t0)                    # flag will be used to inialize s0
-    bnez t1, 1f
-        li s0, 0                    # initialize s0.
-        li t1, 1                    # load the flag
-        sb t1, 0(t0)
-    1:
-    
-    addi s0, s0, 1                  # increase depth
-    bnez a0, 1f                     # If a0 is not NULL, then proceed.  
-        li a0, 0                    # not found val
-        addi sp, sp, 16             # restore stack.
-        ret 
-    1:
-        lw t0, 0(a0)                # load node.val
-        bne a1, t0, 1f              # if node.val != val then proceed.
-            mv a0, s0               # move depth that node.val = val to a0
-            lw ra, 0(sp)            # restore return address
-            addi sp, sp, 16         # restore stack
-            ret
-        1:
-        # Here we need to check children.
-        # LEFT-CHILD
-        lw a0, 4(a0)                # load LEFT-CHILD address to a0
-        jal recursive_tree_search
-        addi s0, s0, -1
-        bnez a0, 1f                 # branch if a0 not zero. (found val)
+factorial:
+    addi sp, sp, -8                 # save registers
+    sw a0, 4(sp)
+    sw ra, 0(sp)
+    li t0, 1                        # temporary variable = 1
+    bgt a0, t0, else                # general case of factorial
+        li a0, 1                        # base case.
+        addi sp, sp, 8                  # restore stack.
+        jr ra                   
+    else:
+        addi a0, a0, -1                 # go-to subcase
+        jal  factorial
+        lw t1, 4(sp)                    # restore n to t1
+        lw ra, 0(sp)                    # restore ra
+        addi sp, sp, 8                  # restore stack.
+        mul a0, a0, t1                  
+        jr ra
+###############################################################################
+# Description:  Computes the a0-th fibonacci number.
+# Inputs:
+#               a0: argument of factorial fib(a0)
+# Outputs:
+#               a0: the fibonacci number itself.
+###############################################################################
+fibonacci:
+    addi sp, sp, -16                     # save register
+    sw a0, 4(sp)                        # save current fibonacci number.
+    sw ra, 0(sp)                        # save return address.
+    li t1, 1                            # for checking base-case.
 
-        # RIGHT-CHILD
-        lw a0, 4(sp)                # restore address of current node
-        lw a0, 8(a0)                # load RIGHT-CHILD address to a0
-        jal recursive_tree_search
-        addi s0, s0, -1
-        bnez a0, 1f                 # branch if a0 not zero (found val)
-
-        1:
-        lw ra, 0(sp)                # restore return address.
-        addi sp, sp, 16             # restore stack
+    bnez a0, 1f
+        # Here it equals zero.    
+        li a0, 0                        # 0-th base case.
+        lw ra, 0(sp)                    # restore return addres.
+        addi sp, sp, 16                  # restore stack.
         ret
+    1:
+    bne a0, t1, 2f 
+        # Here it equals one.
+        li a0, 1                        # 1-th base case.
+        lw ra, 0(sp)                    # restore return address.
+        addi sp, sp, 16                 # restore stack.
+        ret
+    2:
+    # Here we have the general case of the fibonacci number.
+    add a0, a0, -1
+    jal fibonacci
+    sw a0, 8(sp)
+
+    lw a0, 4(sp)
+    addi a0, a0, -2
+    jal fibonacci
+    sw a0, 12(sp)
+
+    lw ra, 0(sp)                        # restore return address
+    lw t1, 8(sp)                        # load fib(n-1)
+    lw t2, 12(sp)                       # load fib(n-2)
+
+    add a0, t1, t2                      # add both numbers.
+    addi sp, sp, 16
+    ret 
 ###############################################################################
 # Description:  Writes string (terminated with null or new line)
 #               pointed by a0 to stdout.
