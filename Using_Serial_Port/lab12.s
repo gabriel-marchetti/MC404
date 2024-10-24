@@ -1,5 +1,6 @@
 .section .bss
 buffer: .space 512
+aux_buffer: .space 512
 itoa_stack: .space 256
 general_purpose_stack: .space 256
 
@@ -60,8 +61,35 @@ operation1:
     jal write
     j switch_ret_point
 operation2:
+    la a0, buffer
+    lhu a1, buffer_size
+    jal read
 
+    la a0, buffer
+    li a1, 0                    # Size of string.
+    # Find Null character at buffer.
+    1:
+        lb t1, 0(a0)
+        beqz t1, 1f
+        addi a0, a0, 1
+        addi a1, a1, 1
+        j 1b
+    1:
+    addi a0, a0, -1
+    # a1 holds the size of string without null character.
+    la t2, aux_buffer
+    1:
+        beqz a1, 1f
+        lb t1, (a0)
+        sb t1, (t2)
+        addi t2, t2, 1
+        addi a0, a0, -1
+        addi a1, a1, -1
+        j 1b
+    1:
 
+    la a0, aux_buffer
+    jal write
 
     j switch_ret_point
 operation3:
@@ -71,7 +99,6 @@ operation3:
 
     jal atoi
     # a0 stores decimal representation.
-    debug:
 
     la a1, buffer
     li a2, 0x10                         # hexadecimal base.
@@ -88,6 +115,7 @@ operation4:
 
     # Search for operation.
     la t0, buffer
+    addi t0, t0, 1              # skips first negative if number 1 negative.
 
     li t2, '+'
     li t3, '-'
@@ -124,7 +152,7 @@ operation4:
         j 1b
     1:
     # t0 will hold address of operation.
-    addi t0, t0, 1              # will hold first digit of second number
+    addi t0, t0, 2              # will hold first digit of second number
     mv a0, t0
     jal atoi
     mv s2, a0                   # s2 hold second number.
@@ -133,6 +161,9 @@ operation4:
     jal atoi
     mv s3, a0                   # s3 hold first number.
 
+    # checking value of s2 and s3.
+
+    debug:
     li t1, 1
     beq s1, t1, sum 
     li t1, 2
@@ -255,9 +286,11 @@ atoi:
     li t1, 0                # will hold the decimal value.
     li t3, 10               # base-10 number.
     li t5, 0                # checks for null char.
+    li t6, ' '              # checks for space-char
     2:
     lb t0, 0(a0)
     beq t0, t5, 2f          # checks for null char.
+    beq t0, t6, 2f          # checks for null char.
         addi t0, t0, -'0'       # adjust ASCII to decimal.
         mul t1, t1, t3          # shift base-10 number.
         add t1, t1, t0          # sum "unit".
