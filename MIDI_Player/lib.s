@@ -6,6 +6,7 @@ isr_stack_end:
 
 .section .data
 .align 2
+.global _system_time
 _system_time: .word 0
 GPT_BASE_ADDRESS: .word 0xffff0100
 MIDI_BASE_ADDRESS: .word 0xffff0300
@@ -25,7 +26,9 @@ _start:
 
     # enable external interrupts
     csrr t0, mie
-    ori t0, t0, 0x800
+
+    li t1, 0x800
+    or t0, t0, t1
     csrw mie, t0
 
     # enable global interrupts
@@ -43,7 +46,7 @@ _start:
 # General purpose interrupt handler.
 main_isr:
     # Save context.
-    csrw sp, mscratch, sp
+    csrrw sp, mscratch, sp
     addi sp, sp, -64
     sw a0, 0(sp)
     sw a1, 4(sp)
@@ -68,5 +71,23 @@ main_isr:
     lw a1, 4(sp)
     lw a2, 8(sp)
     addi sp, sp, 64
-    csrw sp, mscratch, sp 
+    csrrw sp, mscratch, sp 
     mret
+# Inputs:
+# a0 : byte
+# a1 : short
+# a2 : byte
+# a3 : byte
+# a4 : short
+.global play_note
+play_note:
+    la t0, MIDI_BASE_ADDRESS
+    lw t0, (t0)
+
+    sb a0, 0(t0)
+    sh a1, 2(t0)
+    sb a2, 4(t0)
+    sb a3, 5(t0)
+    sh a4, 6(t0)
+
+    ret
